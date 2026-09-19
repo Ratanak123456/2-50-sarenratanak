@@ -209,14 +209,20 @@ const createColumns = (
       ),
     }),
     columnHelper.accessor(
-      (row) => row.categoryId ?? row.category?.id,
+      (row) => {
+        const catId = row.categoryId ?? row.category?.id
+        const found = categories.find((c) => c.id === catId)
+        return found?.name || row.category?.name || "Uncategorized"
+      },
       {
-        id: "categoryId",
+        id: "category",
         header: "Category",
         filterFn: (row, columnId, filterValue) => {
           if (!filterValue || filterValue === "all") return true
           const catId = row.original.categoryId ?? row.original.category?.id
-          return String(catId) === filterValue
+          const found = categories.find((c) => c.id === catId)
+          const categoryName = found?.name || row.category?.name || "Uncategorized"
+          return categoryName.toLowerCase() === filterValue.toLowerCase()
         },
         cell: ({ row }) => {
           const catId = row.original.categoryId ?? row.original.category?.id
@@ -407,7 +413,7 @@ export function DataTable({
   }
 
   const categoryFilterValue =
-    (table.getColumn("categoryId")?.getFilterValue() as string) ?? "all"
+    (table.getColumn("category")?.getFilterValue() as string) ?? "all"
 
   return (
     <Tabs
@@ -423,7 +429,12 @@ export function DataTable({
           <Input
             placeholder="Search by name..."
             value={globalFilter ?? ""}
-            onChange={(event) => setGlobalFilter(event.target.value)}
+            onChange={(event) => table.setGlobalFilter(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                table.setGlobalFilter((event.target as HTMLInputElement).value)
+              }
+            }}
             className="h-9 w-full sm:w-56"
           />
 
@@ -431,7 +442,7 @@ export function DataTable({
           <Select
             value={categoryFilterValue}
             onValueChange={(val) => {
-              table.getColumn("categoryId")?.setFilterValue(val === "all" ? undefined : val)
+              table.getColumn("category")?.setFilterValue(val === "all" ? undefined : val)
             }}
           >
             <SelectTrigger className="h-9 w-[160px]">
@@ -441,7 +452,7 @@ export function DataTable({
               <SelectGroup>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={String(cat.id)}>
+                  <SelectItem key={cat.id} value={cat.name}>
                     {cat.name}
                   </SelectItem>
                 ))}
