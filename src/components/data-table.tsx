@@ -339,10 +339,19 @@ export function DataTable({
   }, [initialData])
 
   const [data, setData] = React.useState(() => sortedInitialData)
+  const [searchQuery, setSearchQuery] = React.useState("")
 
   React.useEffect(() => {
     setData([...initialData].sort((a, b) => b.id - a.id))
   }, [initialData])
+
+  // Filter data by search query on title before sending to table
+  const filteredData = React.useMemo(() => {
+    if (!searchQuery.trim()) return data
+    return data.filter((item) =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [data, searchQuery])
 
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -350,7 +359,6 @@ export function DataTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
-  const [globalFilter, setGlobalFilter] = React.useState("")
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -365,8 +373,8 @@ export function DataTable({
   )
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
+    () => filteredData?.map(({ id }) => id) || [],
+    [filteredData]
   )
 
   const columns = React.useMemo(
@@ -376,21 +384,14 @@ export function DataTable({
 
   const table = useTable({
     features,
-    data,
+    data: filteredData,
     columns,
     state: {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
-      globalFilter,
       pagination,
-    },
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, columnId, filterValue) => {
-      const title = String(row.getValue("title") || "").toLowerCase()
-      const search = String(filterValue).toLowerCase()
-      return title.includes(search)
     },
     getRowId: (row) => row.id.toString(),
     enableRowSelection: true,
@@ -428,11 +429,11 @@ export function DataTable({
           {/* Global Search Input */}
           <Input
             placeholder="Search by name..."
-            value={globalFilter ?? ""}
-            onChange={(event) => table.setGlobalFilter(event.target.value)}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
-                table.setGlobalFilter((event.target as HTMLInputElement).value)
+                setSearchQuery((event.target as HTMLInputElement).value)
               }
             }}
             className="h-9 w-full sm:w-56"
