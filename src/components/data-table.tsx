@@ -197,7 +197,11 @@ const createColumns = (
     }),
     columnHelper.accessor("title", {
       header: "Title",
-      cell: ({ row }) => <TableCellViewer item={row.original} categories={categories} onUpdateProduct={onUpdateProduct} />,
+      cell: ({ row }) => (
+        <div className="max-w-[180px] sm:max-w-[220px] truncate">
+          <TableCellViewer item={row.original} categories={categories} onUpdateProduct={onUpdateProduct} />
+        </div>
+      ),
       enableHiding: false,
     }),
     columnHelper.accessor("slug", {
@@ -807,7 +811,7 @@ function TableCellViewer({
         render={
           <Button
             variant="link"
-            className="w-fit px-0 text-left text-foreground font-medium"
+            className="w-fit px-0 text-left text-foreground font-medium truncate block"
           />
         }
       >
